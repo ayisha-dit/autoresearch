@@ -432,10 +432,10 @@ WINDOW_PATTERN = "SSSL" # sliding window pattern: L=full, S=half context
 
 # Optimization
 TOTAL_BATCH_SIZE = 4096# ~524K tokens per optimizer step
-EMBEDDING_LR = 0.6      # learning rate for token embeddings (Adam)
-UNEMBEDDING_LR = 0.004  # learning rate for lm_head (Adam)
-MATRIX_LR = 0.04        # learning rate for matrix parameters (Muon)
-SCALAR_LR = 0.5         # learning rate for per-layer scalars (Adam)
+EMBEDDING_LR = 0.01     # learning rate for token embeddings (Adam)
+UNEMBEDDING_LR =0.001  # learning rate for lm_head (Adam)
+MATRIX_LR = 0.005       # learning rate for matrix parameters (Muon)
+SCALAR_LR = 0.05        # learning rate for per-layer scalars (Adam)
 WEIGHT_DECAY = 0.2      # cautious weight decay for Muon
 ADAM_BETAS = (0.8, 0.95) # Adam beta1, beta2
 WARMUP_RATIO = 0.0      # fraction of time budget for LR warmup
@@ -572,7 +572,8 @@ while True:
         print("FAIL")
         exit(1)
 
-    torch.cuda.synchronize()
+    if torch.cuda.is_available():
+       torch.cuda.synchronize()
     t1 = time.time()
     dt = t1 - t0
 
