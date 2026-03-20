@@ -631,4 +631,4 @@ print(f"depth:            {DEPTH}")
 torch.save({
     "model_state_dict": model.state_dict(),
     "config": asdict(config)
-}, "model.pth")
+}, "/kaggle/working/model.pth")
