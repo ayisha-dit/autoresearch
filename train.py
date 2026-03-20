@@ -172,9 +172,9 @@ class GPT(nn.Module):
         cos, sin = self._precompute_rotary_embeddings(self.rotary_seq_len, head_dim)
         self.cos, self.sin = cos, sin
         # Cast embeddings to bf16
-        self.transformer.wte.to(dtype=torch.float16)
-        for ve in self.value_embeds.values():
-            ve.to(dtype=torch.float16)
+        # self.transformer.wte.to(dtype=torch.float16)
+        # for ve in self.value_embeds.values():
+        #     ve.to(dtype=torch.float16)
 
     def _precompute_rotary_embeddings(self, seq_len, head_dim, base=10000, device=None):
         if device is None:
@@ -432,10 +432,10 @@ WINDOW_PATTERN = "SSSL" # sliding window pattern: L=full, S=half context
 
 # Optimization
 TOTAL_BATCH_SIZE = 4096# ~524K tokens per optimizer step
-EMBEDDING_LR = 0.01     # learning rate for token embeddings (Adam)
-UNEMBEDDING_LR =0.001  # learning rate for lm_head (Adam)
-MATRIX_LR = 0.005       # learning rate for matrix parameters (Muon)
-SCALAR_LR = 0.05        # learning rate for per-layer scalars (Adam)
+EMBEDDING_LR = 0.005
+UNEMBEDDING_LR = 0.0005
+MATRIX_LR = 0.002
+SCALAR_LR = 0.02        # learning rate for per-layer scalars (Adam)
 WEIGHT_DECAY = 0.2      # cautious weight decay for Muon
 ADAM_BETAS = (0.8, 0.95) # Adam beta1, beta2
 WARMUP_RATIO = 0.0      # fraction of time budget for LR warmup
@@ -456,10 +456,7 @@ if torch.cuda.is_available():
     torch.cuda.manual_seed(42)
 torch.set_float32_matmul_precision("high")
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-if torch.cuda.is_available():
-    autocast_ctx = torch.amp.autocast(device_type="cuda", dtype=torch.float16)
-else:
-    autocast_ctx = torch.no_grad()  # safe fallback)
+autocast_ctx = torch.enable_grad() # safe fallback)
 H100_BF16_PEAK_FLOPS = 989.5e12
 
 tokenizer = Tokenizer.from_directory()
@@ -550,6 +547,7 @@ while True:
         train_loss = loss.detach()
         loss = loss / grad_accum_steps
         loss.backward()
+        torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
         x, y, epoch = next(train_loader)
 
     # Progress and schedules
@@ -568,7 +566,7 @@ while True:
     train_loss_f = train_loss.item()
 
     # Fast fail: abort if loss is exploding or NaN
-    if math.isnan(train_loss_f) or train_loss_f > 100:
+    if math.isnan(train_loss_f) or math.isinf(train_loss_f):
         print("FAIL")
         exit(1)
 
