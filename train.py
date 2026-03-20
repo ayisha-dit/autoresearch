@@ -628,3 +628,7 @@ print(f"total_tokens_M:   {total_tokens / 1e6:.1f}")
 print(f"num_steps:        {step}")
 print(f"num_params_M:     {num_params / 1e6:.1f}")
 print(f"depth:            {DEPTH}")
+torch.save({
+    "model_state_dict": model.state_dict(),
+    "config": asdict(config)
+}, "model.pth")
